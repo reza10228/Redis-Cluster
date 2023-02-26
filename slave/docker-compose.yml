@@ -1,0 +1,35 @@
+version: '3.7'
+services:
+  fix-redis-volume-ownership: # This service is to authorise redis-master with ownership permissions
+    image: 'bitnami/redis:latest'
+    container_name: ownership
+    user: root
+    command: chown -R 1001:1001 /bitnami
+    volumes:
+      - /home/services/redis/slave:/bitnami
+      - ./etc/conf/redis.conf:/opt/bitnami/redis/conf/redis.conf
+
+
+  redis-replica: # Setting up slave node
+    image: 'bitnami/redis:latest'
+    container_name: redis_slave
+    hostname: redis_slave
+    restart: always
+    ports:
+      - '6379' # No port is exposed
+    environment:
+      - REDIS_REPLICATION_MODE=slave # Assigning the node as slave
+      - REDIS_MASTER_HOST=IP_YOUR_MASTER # Host for the slave node is the redis-master node
+      - REDIS_MASTER_PORT_NUMBER=PORT_YOUR_MASTER # Port number for local
+      - REDIS_MASTER_PASSWORD=YOUT_PASSWORD_REDIS
+      - REDIS_PASSWORD=YOUT_PASSWORD_REDIS
+    sysctls:
+      - net.core.somaxconn=65535
+    volumes:
+      - /home/services/redis/slave:/bitnami
+      - ./etc/conf/redis.conf:/opt/bitnami/redis/conf/redis.conf
+    networks:
+      - my_service
+networks:
+  my_service:
+    external: true
